@@ -11,10 +11,10 @@
   "dependencies": {
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
+    "dotenv": "^16.1.4",
     "express": "^4.18.2",
     "nodemon": "^2.0.22",
-    "sqlite": "^4.1.2",
+    "sqlite": "^4.2.1",
     "sqlite-async": "^1.2.0",
     "sqlite3": "^5.1.6"
   },
