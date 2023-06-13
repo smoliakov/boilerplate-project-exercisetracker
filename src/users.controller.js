@@ -55,6 +55,35 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/users/:id
+router.get('/:userId', async (req, res) => {
+  try {
+    // Extract the user ID from the request parameters
+    const userId = parseInt(req.params.userId);
+
+    // Open a connection to the database
+    const db = await Database.open('test.db');
+
+    // Query the database for the user with the specified ID
+    const user = await db.get('SELECT * FROM users WHERE id = ?', userId);
+
+    // Close the database connection
+    await db.close();
+
+    // If the user doesn't exist, return a 404 error
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Return the user as a JSON response
+    res.json(user);
+  } catch (error) {
+    // Handle any errors that occur during user retrieval
+    console.error(error);
+    res.status(500).json({ message: 'Failed to retrieve user.' });
+  }
+});
+
 // POST /api/users/:_id/exercises
 router.post('/:userId/exercises', async (req, res) => {
   try {
@@ -113,10 +142,10 @@ router.post('/:userId/exercises', async (req, res) => {
   }
 });
 
-router.get('/:userId/logs', async (req, res) => {
+router.get('/:id/logs', async (req, res) => {
   try {
     const db = await Database.open('test.db');
-    const userId = parseInt(req.params.userId);
+    const userId = parseInt(req.params.id);
 
     // Get user object from the database
     const user = await db.get('SELECT * FROM users WHERE id = ?', [userId]);
@@ -125,23 +154,43 @@ router.get('/:userId/logs', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Get all exercises associated with the user
-    let logs = await db.all('SELECT * FROM exercises WHERE user_id = ?', [userId]);
+    // Construct the SQL query for fetching the logs
+    let query = 'SELECT id, duration, description, date FROM exercises WHERE user_id = ?';
+    const queryParams = [userId];
 
-    // Filter logs by date if necessary
-    const { from, to } = req.query;
-    if (from && to) {
-      logs = logs.filter((exercise) => {
-        const exerciseDate = new Date(exercise.date).getTime();
-        return exerciseDate >= new Date(from).getTime() && exerciseDate <= new Date(to).getTime();
-      });
+    // Check for the optional query parameters
+    const { from, to, limit } = req.query;
+
+    // Check for the optional "from" parameter
+    if (from) {
+      query += ' AND date >= ?';
+      queryParams.push(from);
     }
 
+    // Check for the optional "to" parameter
+    if (to) {
+      query += ' AND date <= ?';
+      queryParams.push(to);
+    }
+
+    // Add ordering by date
+    query += ' ORDER BY date DESC';
+
+    // Limit the logs if necessary
+    if (limit) {
+      query += ' LIMIT ?';
+      queryParams.push(parseInt(limit));
+    }
+
+    // Execute the SQL query to fetch the logs
+    const logs = await db.all(query, queryParams);
+
     const logCount = logs.length;
+
     const userExerciseLog = {
       ...user,
+      logs,
       count: logCount,
-      log: logs,
     };
 
     return res.status(200).json(userExerciseLog);
