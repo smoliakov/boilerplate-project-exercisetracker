@@ -14,9 +14,13 @@ router.post('/', async (req, res) => {
   try {
     const { username } = req.body;
 
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required.' });
+    }
+
     const db = await openDatabase();
-    const result = await db.run('INSERT INTO users (username) VALUES (?)', username);
-    const user = await db.get('SELECT * FROM users WHERE id = ?', result.lastID);
+    const result = await db.run('INSERT INTO users (username) VALUES (?)', [username]);
+    const user = await db.get('SELECT * FROM users WHERE id = ?', [result.lastID]);
     await db.close();
 
     res.json(user);
@@ -46,7 +50,7 @@ router.get('/:userId', async (req, res) => {
     const userId = parseInt(req.params.userId);
 
     const db = await openDatabase();
-    const user = await db.get('SELECT * FROM users WHERE id = ?', userId);
+    const user = await db.get('SELECT * FROM users WHERE id = ?', [userId]);
     await db.close();
 
     if (!user) {
@@ -76,10 +80,10 @@ router.post('/:userId/exercises', async (req, res) => {
     const db = await openDatabase();
     const result = await db.run(
       'INSERT INTO exercises (user_id, description, duration, date) VALUES (?, ?, ?, ?)',
-      userId, description, duration, formattedDate
+      [userId, description, duration, formattedDate]
     );
     const exerciseId = result.lastID;
-    const exercise = await db.get('SELECT * FROM exercises WHERE id = ?', exerciseId);
+    const exercise = await db.get('SELECT * FROM exercises WHERE id = ?', [exerciseId]);
     await db.close();
 
     const response = {
@@ -103,7 +107,7 @@ router.get('/:id/logs', async (req, res) => {
     const userId = parseInt(req.params.id);
     const db = await openDatabase();
 
-    const user = await db.get('SELECT * FROM users WHERE id = ?', userId);
+    const user = await db.get('SELECT * FROM users WHERE id = ?', [userId]);
     if (!user) {
       await db.close();
       return res.status(404).json({ message: 'User not found' });
@@ -114,12 +118,20 @@ router.get('/:id/logs', async (req, res) => {
 
     const { from, to, limit } = req.query;
 
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/; // Regular expression to match "YYYY-MM-DD" format
+
     if (from) {
+      if (!dateRegex.test(from)) {
+        return res.status(400).json({ message: 'Invalid "from" date format. Expected format: YYYY-MM-DD' });
+      }
       query += ' AND date >= ?';
       queryParams.push(from);
     }
 
     if (to) {
+      if (!dateRegex.test(to)) {
+        return res.status(400).json({ message: 'Invalid "to" date format. Expected format: YYYY-MM-DD' });
+      }
       query += ' AND date <= ?';
       queryParams.push(to);
     }
@@ -148,5 +160,6 @@ router.get('/:id/logs', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 export default router;
