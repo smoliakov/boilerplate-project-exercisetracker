@@ -9,23 +9,30 @@ class DatabaseConnection {
     if (!this.dbInstance) {
       this.dbInstance = await Database.open('test.db');
 
-      // create a 'users' table if it doesn't already exist
-      await this.dbInstance.exec(`
-        CREATE TABLE IF NOT EXISTS users (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          username TEXT NOT NULL UNIQUE
-        );
-        CREATE TABLE IF NOT EXISTS exercises (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER NOT NULL,
-          duration INTEGER NOT NULL,
-          description TEXT NOT NULL,
-          date TEXT NOT NULL
-        );
-      `);
+      await this.createTables();
     }
 
     return this.dbInstance;
+  }
+
+  async createTables() {
+    const createUsersTable = `
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL
+      );
+    `;
+    const createExercisesTable = `
+      CREATE TABLE IF NOT EXISTS exercises (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        duration INTEGER NOT NULL,
+        description TEXT NOT NULL,
+        date TEXT NOT NULL
+      );
+    `;
+
+    await this.dbInstance.exec(`${createUsersTable} ${createExercisesTable}`);
   }
 }
 
