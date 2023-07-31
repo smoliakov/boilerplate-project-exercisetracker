@@ -11,7 +11,6 @@ body {
 
 h1 {
   font-weight: bold;
-  
 }
 
 p {
@@ -56,4 +55,8 @@ code {
   font-size: 1.2em;
   background-color: #FFFEC4;
   padding: 2px;
+}
+
+pre {
+  white-space: break-spaces;
 }

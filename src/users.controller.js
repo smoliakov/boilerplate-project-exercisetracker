@@ -24,6 +24,11 @@ router.post('/', async (req, res) => {
 
     const { username } = req.body;
 
+    const searchResult = await db.get('SELECT * FROM users WHERE username = ?', [username]);
+    if (searchResult) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
     const result = await db.run('INSERT INTO users (username) VALUES (?)', [username]);
     const user = await db.get('SELECT * FROM users WHERE id = ?', [result.lastID]);
 
